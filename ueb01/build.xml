@@ -1,0 +1,122 @@
+<project name="fhw" default="all" basedir=".">
+  <description>
+    Build-Konfiguration fuer die Uebungsaufgaben
+  </description>
+
+  <!-- compilation options -->
+  <property name="java.encoding"     value="UTF-8"/>
+  <property name="java.source"       value="17"/>
+  <property name="java.target"       value="17"/>
+  <property name="java.release"      value="17"/>
+  <property name="java.compilerargs" value="-Xlint:all -Xlint:-options -Xlint:-serial"/>
+  
+  <!-- directories -->
+  <property name="src.dir"       location="src/"/>
+  <property name="src.test.dir"  location="test/"/>
+  <property name="lib.dir"       location="lib/"/>
+  <property name="doc.dir"       location="doc/"/>
+  <property name="out.dir"       location="bin/"/>
+  
+  <!-- tools -->
+  <property name="junit.jar"          location="${lib.dir}/junit-4.13.2.jar"/>
+  <property name="hamcrest-core.jar"  location="${lib.dir}/hamcrest-core-1.3.jar"/>
+  <property name="checkstyle.jar"     location="${lib.dir}/checkstyle-10.3.4-all.jar"/>
+  
+  <path id="lib.classpath.dir" />
+  
+  <!-- create checkstyle task -->
+  <property name="checkstyle.conf" location="fh-checkstyle-config.xml"/>
+  <taskdef resource="com/puppycrawl/tools/checkstyle/ant/checkstyle-ant-task.properties"
+       classpath="${checkstyle.jar}"/>
+  
+  <!-- junit configuration -->
+  <property name="junit.suite"   value="TestSuite"/>
+
+<!-- #####  ALL  ##### -->
+
+  <target name="all" depends="check, test, doc"
+          description="Run checkstyle, all tests and generate javadoc">
+  </target>
+
+
+<!-- #####  COMPILE  ##### -->
+
+  <target name="compile" depends="check, doc" description="compile java sources">
+    <mkdir dir="${out.dir}"/>
+    <javac source="${java.source}" target="${java.target}" release="${java.release}"
+           encoding="${java.encoding}"
+           srcdir="${src.dir}" destdir="${out.dir}"
+           includeantruntime="false"
+           classpathref="lib.classpath.dir"
+           failonerror="true">
+      <compilerarg line="${java.compilerargs} -Werror"/>
+    </javac>
+  </target>
+
+  <target name="compile-tests" depends="compile"
+          description="compiles tests">
+    <javac source="${java.source}" target="${java.target}" release="${java.release}"
+           encoding="${java.encoding}"
+           srcdir="${src.test.dir}" destdir="${out.dir}"
+           classpath="${junit.jar}:${out.dir}"
+           includeantruntime="false"
+           classpathref="lib.classpath.dir"
+           failonerror="true"
+           excludes="**/*DontCompile*.java **/*DoCompile*.java">
+      <compilerarg line="${java.compilerargs}"/>
+    </javac>
+  </target>
+
+
+<!-- #####  CHECKSTYLE  ##### -->
+
+  <target name="check" description="run checkstyle">
+      <checkstyle config="${checkstyle.conf}" maxWarnings="0" failOnViolation="true">
+          <fileset dir="${src.dir}" includes="**/*.java"/>
+      </checkstyle>
+  </target>
+
+
+<!-- #####  JUNIT  ##### -->
+
+  <target name="test" depends="compile-tests"
+          description="run junit tests">
+    <junit fork="yes" haltonerror="yes" haltonfailure="yes">
+      <classpath>
+        <pathelement path="${junit.jar}:${hamcrest-core.jar}:${out.dir}"/>
+      </classpath>
+      <jvmarg value="-ea"/>                    <!-- enable assertions -->
+      <jvmarg value="-Djava.compiler=NONE"/>   <!-- disbale optimization -->
+      <test name="${junit.suite}">
+        <formatter type="brief" usefile="false"/>
+      </test>
+    </junit>
+  </target>
+
+
+<!-- #####  JAVADOC  ##### -->
+
+  <target name="doc"
+          description="generate javadoc documentation">
+    <javadoc destdir="${doc.dir}"
+             encoding="UTF-8" docencoding="UTF-8" charset="UTF-8"
+             classpathref="lib.classpath.dir"
+             author="true" use="true" failonerror="true">
+      <arg value="-quiet"/>
+      <arg value="-Xwerror"/>
+      <fileset dir="${src.dir}"/>
+      <tag name="pre"  scope="constructors,methods" description="Precondition"></tag>
+      <tag name="post" scope="constructors,methods" description="Postcondition"></tag>
+      <tag name="time" scope="constructors,methods" description="Runtime Complexity"></tag>
+    </javadoc>
+  </target>
+
+<!-- #####  CLEAN  ##### -->
+
+  <target name="clean"
+          description="clean up">
+    <delete dir="${out.dir}"/>
+    <delete dir="${doc.dir}"/>
+  </target>
+
+</project>
